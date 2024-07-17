@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+
+  <body>
+    <script>
+      // uTools API onPluginEnter(callback)
+      // type 为 "text"、"regex"、 "over" 时， payload 值为进入插件应用时的主输入框文本
+      utools.onPluginEnter(({ code, type, payload, option }) => {
+        console.log("用户进入插件应用", code, type, payload);
+      });
+    </script>
+  </body>
+</html>
