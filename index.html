@@ -5,11 +5,29 @@
   </head>
 
   <body>
-    <script>
+    <script type="module">
+      import config from "./config.js";
+      const { logseqRequest, formatDate } = config;
+
       // uTools API onPluginEnter(callback)
       // type 为 "text"、"regex"、 "over" 时， payload 值为进入插件应用时的主输入框文本
-      utools.onPluginEnter(({ code, type, payload, option }) => {
+      utools.onPluginEnter(async ({ code, type, payload, option }) => {
         console.log("用户进入插件应用", code, type, payload);
+
+        const { preferredDateFormat } = await logseqRequest(
+          "logseq.App.getUserConfigs"
+        );
+
+        const nowJournal = formatDate(new Date(), preferredDateFormat);
+
+        if (code === "save_to_logseq") {
+          if (type === "over") {
+            logseqRequest("logseq.Editor.appendBlockInPage", [
+              nowJournal,
+              payload,
+            ]);
+          }
+        }
       });
     </script>
   </body>
