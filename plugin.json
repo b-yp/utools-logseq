@@ -15,6 +15,10 @@
         {
           "type": "over",
           "label": "保存至 Logseq"
+        },
+        {
+          "type": "img",
+          "label": "保存至 Logseq"
         }
       ]
     }

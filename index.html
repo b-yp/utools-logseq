@@ -7,26 +7,57 @@
   <body>
     <script type="module">
       import config from "./config.js";
-      const { logseqRequest, formatDate } = config;
+      const { logseqRequest, formatDate, base64ToFile, dataUrlToBuffer } =
+        config;
 
       // uTools API onPluginEnter(callback)
       // type 为 "text"、"regex"、 "over" 时， payload 值为进入插件应用时的主输入框文本
       utools.onPluginEnter(async ({ code, type, payload, option }) => {
-        console.log("用户进入插件应用", code, type, payload);
+        try {
+          console.log("用户进入插件应用", code, type, payload, option);
 
-        const { preferredDateFormat } = await logseqRequest(
-          "logseq.App.getUserConfigs"
-        );
+          const { path: currentGraphPath } = await logseqRequest(
+            "logseq.App.getCurrentGraph"
+          );
 
-        const nowJournal = formatDate(new Date(), preferredDateFormat);
+          const { preferredDateFormat } = await logseqRequest(
+            "logseq.App.getUserConfigs"
+          );
 
-        if (code === "save_to_logseq") {
-          if (type === "over") {
-            logseqRequest("logseq.Editor.appendBlockInPage", [
-              nowJournal,
-              payload,
-            ]);
+          const nowJournal = formatDate(new Date(), preferredDateFormat);
+
+          if (code === "save_to_logseq") {
+            if (type === "over") {
+              logseqRequest("logseq.Editor.appendBlockInPage", [
+                nowJournal,
+                payload,
+              ]);
+            }
+            if (type === "img") {
+              const base64String = payload;
+              const base64Data = base64String.replace(
+                /^data:image\/\w+;base64,/,
+                ""
+              );
+              const [u8arr] = dataUrlToBuffer(base64String);
+
+              const imageName = `image_${Date.now()}_0.png`; //毫秒级时间戳，基本上不可能有同一时间保存多张图片的情况，但是为了和 Logseq 格式保持一致，所以加个 _0
+              const filePath = `${currentGraphPath}/assets/${imageName}`;
+              window.writeFile(filePath, u8arr, (err) => {
+                if (err) {
+                  console.error("save error:", err);
+                } else {
+                  console.log("save success:", filePath);
+                  logseqRequest("logseq.Editor.appendBlockInPage", [
+                    nowJournal,
+                    `![image.png](../assets/${imageName})`,
+                  ]);
+                }
+              });
+            }
           }
+        } catch (error) {
+          console.error("error", error);
         }
       });
     </script>
