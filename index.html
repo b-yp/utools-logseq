@@ -73,12 +73,18 @@
                   );
 
                   const fileName = `${name}_${Date.now()}_0.${format}`; // _0 为了和 Logseq 格式保持一致
-                  const filePath = `${currentGraphPath}/assets/${fileName}`;
+                  const assetsFilePath = `${currentGraphPath}/assets/${fileName}`;
+                  const pageFilePath = `${currentGraphPath}/pages/${item.name}`; // TODO: 已存在文件
                   const assetsList = ["image", "video", "audio", "pdf"];
-                  const mdFile = `
+                  const mdLink = `
                     ${assetsList.includes(format) ? "!" : ""}[${
                     item.name
                   }](../assets/${fileName})`;
+                  const backlink = `[[${name}]]`;
+                  const filePath =
+                    type === "markdown" ? pageFilePath : assetsFilePath;
+                  const link = type === "markdown" ? backlink : mdLink;
+
                   window.copyFile(item.path, filePath, (err) => {
                     if (err) {
                       console.error("copy error:", err);
@@ -87,7 +93,7 @@
                       // TODO: 文件名如果不规范则渲染会有问题, 比如: [7@7[_@J)C597LGT1R@E_GI
                       logseqRequest("logseq.Editor.appendBlockInPage", [
                         nowJournal,
-                        mdFile,
+                        link,
                       ]);
                     }
                   });
