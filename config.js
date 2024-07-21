@@ -102,9 +102,43 @@ const dataUrlToBuffer = (urlData) => {
   return [base64ToBuffer(base64), type]
 }
 
+/**
+ * 根据文件名匹配文件类型和格式
+ * @param {string} fileName - 文件名
+ * @returns {Object} - 包含类型和格式的对象
+ */
+function getFileTypeAndFormat(fileName) {
+  // 文件类型和对应的格式
+  const fileTypes = {
+    image: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'svg', 'webp'],
+    video: ['mp4', 'avi', 'mov', 'mkv', 'flv', 'wmv', 'webm'],
+    audio: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'],
+    markdown: ['md'],
+    pdf: ['pdf'],
+    document: ['txt', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'],
+    archive: ['zip', 'rar', '7z', 'tar', 'gz'],
+    code: ['html', 'css', 'js', 'jsx', 'ts', 'tsx', 'java', 'py', 'cpp', 'c', 'cs', 'php'],
+  };
+
+  // 获取文件扩展名
+  const extension = fileName.split('.').pop().toLowerCase();
+  const name = fileName.replace(`.${extension}`, '')
+
+  // 匹配文件类型
+  for (const [type, formats] of Object.entries(fileTypes)) {
+    if (formats.includes(extension)) {
+      return { type, format: extension, name};
+    }
+  }
+
+  // 如果没有匹配的类型和格式，返回未知类型
+  return { type: 'unknown', format: extension, name };
+}
+
 export default {
   request,
   logseqRequest,
   formatDate,
-  dataUrlToBuffer
+  dataUrlToBuffer,
+  getFileTypeAndFormat
 }

@@ -7,8 +7,13 @@
   <body>
     <script type="module">
       import config from "./config.js";
-      const { logseqRequest, formatDate, base64ToFile, dataUrlToBuffer } =
-        config;
+      const {
+        logseqRequest,
+        formatDate,
+        base64ToFile,
+        dataUrlToBuffer,
+        getFileTypeAndFormat,
+      } = config;
 
       // uTools API onPluginEnter(callback)
       // type 为 "text"、"regex"、 "over" 时， payload 值为进入插件应用时的主输入框文本
@@ -52,6 +57,40 @@
                     nowJournal,
                     `![image.png](../assets/${imageName})`,
                   ]);
+                }
+              });
+            }
+            if (type === "files") {
+              payload.forEach((item) => {
+                if (
+                  item.isFile &&
+                  !item.isDirectory &&
+                  item.path &&
+                  item.name
+                ) {
+                  const { type, format, name } = getFileTypeAndFormat(
+                    item.name
+                  );
+
+                  const fileName = `${name}_${Date.now()}_0.${format}`; // _0 为了和 Logseq 格式保持一致
+                  const filePath = `${currentGraphPath}/assets/${fileName}`;
+                  const assetsList = ["image", "video", "audio", "pdf"];
+                  const mdFile = `
+                    ${assetsList.includes(format) ? "!" : ""}[${
+                    item.name
+                  }](../assets/${fileName})`;
+                  window.copyFile(item.path, filePath, (err) => {
+                    if (err) {
+                      console.error("copy error:", err);
+                    } else {
+                      console.log("copy success:", filePath);
+                      // TODO: 文件名如果不规范则渲染会有问题, 比如: [7@7[_@J)C597LGT1R@E_GI
+                      logseqRequest("logseq.Editor.appendBlockInPage", [
+                        nowJournal,
+                        mdFile,
+                      ]);
+                    }
+                  });
                 }
               });
             }
