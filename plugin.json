@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "pluginName": "快速保存至 Logseq",
   "description": "快速保存文本、图片、视频等到 Logseq",
-  "main": "index.html",
   "logo": "logo-iconfont.png",
   "preload": "preload.js",
   "features": [
