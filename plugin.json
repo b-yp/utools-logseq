@@ -25,6 +25,26 @@
           "fileRype": "file"
         }
       ]
+    },
+    {
+      "code": "set_logseq_server_host",
+      "explain": "设置 Logseq Server Host",
+      "cmds": ["set logseq server host"]
+    },
+    {
+      "code": "set_logseq_server_port",
+      "explain": "设置 Logseq Server Port",
+      "cmds": ["set logseq server port"]
+    },
+    {
+      "code": "set_logseq_server_token",
+      "explain": "设置 Logseq Server Token",
+      "cmds": ["set logseq server token"]
+    },
+    {
+      "code": "get_logseq_server_config",
+      "explain": "获取 Logseq Server Config",
+      "cmds": ["get logseq server config"]
     }
   ]
 }

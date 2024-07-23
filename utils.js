@@ -1,4 +1,10 @@
-const { BASE_URL, TOKEN } = require('./config')
+const { DEFAULT_HOST, DEFAULT_PORT, DEFAULT_TOKEN } = require("./config");
+
+const dbHost = utools.dbStorage.getItem("host");
+const dbPort = utools.dbStorage.getItem("port");
+const dbToken = utools.dbStorage.getItem("token");
+const api = `http://${dbHost || DEFAULT_HOST}:${dbPort || DEFAULT_PORT}/api`;
+const token = dbToken || DEFAULT_TOKEN;
 
 /**
  * request 方法
@@ -40,34 +46,39 @@ const request = async (url, options = {}) => {
 };
 
 /**
- * 
- * @param {*} method 
- * @param {*} args 
+ *
+ * @param {*} method
+ * @param {*} args
  */
 const logseqRequest = (method, args) => {
-  return request(BASE_URL, {
-    method: 'POST',
+  return request(api, {
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${TOKEN}`,
+      Authorization: `Bearer ${token}`,
     },
     body: {
       method,
-      args
-    }
+      args,
+    },
   });
 };
 
 const dateFormatters = {
-  'do': date => getOrdinalDate(date.getDate()),
-  'MMM': date => new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date),
-  'MMMM': date => new Intl.DateTimeFormat('en-US', { month: 'long' }).format(date),
-  'E': date => new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
-  'EEE': date => new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
-  'EEEE': date => new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date),
-  'dd': date => pad(date.getDate()),
-  'MM': date => pad(date.getMonth() + 1),
-  'yyyy': date => date.getFullYear(),
+  do: (date) => getOrdinalDate(date.getDate()),
+  MMM: (date) =>
+    new Intl.DateTimeFormat("en-US", { month: "short" }).format(date),
+  MMMM: (date) =>
+    new Intl.DateTimeFormat("en-US", { month: "long" }).format(date),
+  E: (date) =>
+    new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date),
+  EEE: (date) =>
+    new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date),
+  EEEE: (date) =>
+    new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date),
+  dd: (date) => pad(date.getDate()),
+  MM: (date) => pad(date.getMonth() + 1),
+  yyyy: (date) => date.getFullYear(),
 };
 
 const formatDate = (date, format) => {
@@ -82,24 +93,26 @@ const getOrdinalDate = (date) => {
   return date + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
 };
 
-const pad = (number) => number < 10 ? '0' + number : number;
+const pad = (number) => (number < 10 ? "0" + number : number);
 
 const base64ToBuffer = (base64String) => {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, "+")
+    .replace(/_/g, "/");
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
+    outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
-}
+};
 const dataUrlToBuffer = (urlData) => {
-  const [head, base64] = urlData.split(',')
-  const type = head.match(/:(.*?);/)[1]
-  
-  return [base64ToBuffer(base64), type]
-}
+  const [head, base64] = urlData.split(",");
+  const type = head.match(/:(.*?);/)[1];
+
+  return [base64ToBuffer(base64), type];
+};
 
 /**
  * 根据文件名匹配文件类型和格式
@@ -109,29 +122,42 @@ const dataUrlToBuffer = (urlData) => {
 function getFileTypeAndFormat(fileName) {
   // 文件类型和对应的格式
   const fileTypes = {
-    image: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'svg', 'webp'],
-    video: ['mp4', 'avi', 'mov', 'mkv', 'flv', 'wmv', 'webm'],
-    audio: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'],
-    markdown: ['md'],
-    pdf: ['pdf'],
-    document: ['txt', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'],
-    archive: ['zip', 'rar', '7z', 'tar', 'gz'],
-    code: ['html', 'css', 'js', 'jsx', 'ts', 'tsx', 'java', 'py', 'cpp', 'c', 'cs', 'php'],
+    image: ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "svg", "webp"],
+    video: ["mp4", "avi", "mov", "mkv", "flv", "wmv", "webm"],
+    audio: ["mp3", "wav", "flac", "aac", "ogg", "wma"],
+    markdown: ["md"],
+    pdf: ["pdf"],
+    document: ["txt", "doc", "docx", "xls", "xlsx", "ppt", "pptx"],
+    archive: ["zip", "rar", "7z", "tar", "gz"],
+    code: [
+      "html",
+      "css",
+      "js",
+      "jsx",
+      "ts",
+      "tsx",
+      "java",
+      "py",
+      "cpp",
+      "c",
+      "cs",
+      "php",
+    ],
   };
 
   // 获取文件扩展名
-  const extension = fileName.split('.').pop().toLowerCase();
-  const name = fileName.replace(`.${extension}`, '')
+  const extension = fileName.split(".").pop().toLowerCase();
+  const name = fileName.replace(`.${extension}`, "");
 
   // 匹配文件类型
   for (const [type, formats] of Object.entries(fileTypes)) {
     if (formats.includes(extension)) {
-      return { type, format: extension, name};
+      return { type, format: extension, name };
     }
   }
 
   // 如果没有匹配的类型和格式，返回未知类型
-  return { type: 'unknown', format: extension, name };
+  return { type: "unknown", format: extension, name };
 }
 
 module.exports = {
@@ -139,5 +165,5 @@ module.exports = {
   logseqRequest,
   formatDate,
   dataUrlToBuffer,
-  getFileTypeAndFormat
-}
+  getFileTypeAndFormat,
+};

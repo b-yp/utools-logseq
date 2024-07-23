@@ -7,9 +7,9 @@ const {
 } = require("./utils");
 
 const appendBlockInPage = async (args) => {
-  await logseqRequest("logseq.Editor.appendBlockInPage", args)
-  await logseqRequest("logseq.Editor.exitEditingMode");  // TODO 为什么这个方法没有生效
-  window.utools.outPlugin();
+  await logseqRequest("logseq.Editor.appendBlockInPage", args);
+  await logseqRequest("logseq.Editor.exitEditingMode"); // TODO 为什么这个方法没有生效
+  utools.outPlugin();
 };
 
 window.exports = {
@@ -99,6 +99,114 @@ window.exports = {
           console.error("error", error);
         }
         // window.utools.outPlugin();
+      },
+    },
+  },
+  set_logseq_server_host: {
+    mode: "list",
+    args: {
+      enter: (action, callbackSetList) => {
+        callbackSetList([
+          {
+            title: "请输入 Logseq Server Host",
+            description: "默认值：127.0.0.1",
+            icon: "",
+          },
+        ]);
+      },
+      search: (action, searchWord, callbackSetList) => {
+        callbackSetList([
+          {
+            title: "输入完成回车确认",
+            description: searchWord,
+            icon: "",
+          },
+        ]);
+      },
+      select: (action, itemData, callbackSetList) => {
+        const host = itemData.description;
+        utools.dbStorage.setItem("host", host);
+        utools.outPlugin();
+      },
+      placeholder: "请输入 Logseq Server Host",
+    },
+  },
+  set_logseq_server_port: {
+    mode: "list",
+    args: {
+      enter: (action, callbackSetList) => {
+        callbackSetList([
+          {
+            title: "请输入 Logseq Server Port",
+            description: "默认值：12315",
+            icon: "",
+          },
+        ]);
+      },
+      search: (action, searchWord, callbackSetList) => {
+        callbackSetList([
+          {
+            title: "输入完成回车确认",
+            description: searchWord,
+            icon: "",
+          },
+        ]);
+      },
+      select: (action, itemData, callbackSetList) => {
+        const port = itemData.description;
+        utools.dbStorage.setItem("port", port);
+        utools.outPlugin();
+      },
+      placeholder: "请输入 Logseq Server port",
+    },
+  },
+  set_logseq_server_token: {
+    mode: "list",
+    args: {
+      enter: (action, callbackSetList) => {
+        callbackSetList([
+          {
+            title: "请输入 Logseq Server Token",
+            description: "默认值：utools",
+            icon: "",
+          },
+        ]);
+      },
+      search: (action, searchWord, callbackSetList) => {
+        callbackSetList([
+          {
+            title: "输入完成回车确认",
+            description: searchWord,
+            icon: "",
+          },
+        ]);
+      },
+      select: (action, itemData, callbackSetList) => {
+        const token = itemData.description;
+        utools.dbStorage.setItem("token", token);
+        utools.outPlugin();
+      },
+      placeholder: "请输入 Logseq Server Token",
+    },
+  },
+  get_logseq_server_config: {
+    mode: "list",
+    args: {
+      enter: (action, callbackSetList) => {
+        callbackSetList([
+          {
+            title: "Logseq Server Host",
+            description: utools.dbStorage.getItem("host"),
+          },
+          {
+            title: "Logseq Server Port",
+            description: utools.dbStorage.getItem("port"),
+          },
+          {
+            title: "Logseq Server Token",
+            description: utools.dbStorage.getItem("token"),
+          },
+        ]);
       },
     },
   },
