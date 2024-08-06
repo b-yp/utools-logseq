@@ -34,10 +34,13 @@ const request = async (url, options = {}) => {
     method,
     headers,
     body,
+  }).catch((error) => {
+    utools.showNotification(`❌ 出错：${JSON.stringify(error)}`);
   });
 
   // 检查响应状态码
   if (!response.ok) {
+    utools.showNotification(`❌ 出错：HTTP error! status: ${response.status}`);
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 

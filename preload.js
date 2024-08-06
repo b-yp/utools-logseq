@@ -9,6 +9,7 @@ const {
 const appendBlockInPage = async (args) => {
   await logseqRequest("logseq.Editor.appendBlockInPage", args);
   await logseqRequest("logseq.Editor.exitEditingMode"); // TODO 为什么这个方法没有生效
+  utools.showNotification(`✅ 保存成功：${JSON.stringify(args)}`)
   utools.outPlugin();
 };
 
