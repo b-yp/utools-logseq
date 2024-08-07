@@ -4,16 +4,73 @@ const {
   formatDate,
   dataUrlToBuffer,
   getFileTypeAndFormat,
+  debounce,
 } = require("./utils");
 
 const appendBlockInPage = async (args) => {
   await logseqRequest("logseq.Editor.appendBlockInPage", args);
   await logseqRequest("logseq.Editor.exitEditingMode"); // TODO 为什么这个方法没有生效
-  utools.showNotification(`✅ 保存成功：${JSON.stringify(args)}`)
+  utools.showNotification(`✅ 保存成功：${JSON.stringify(args)}`);
   utools.outPlugin();
 };
 
-let searchText = ''
+const searchPageAndBlock = async (payload) => {
+  const pages = await logseqRequest("logseq.DB.datascriptQuery", [
+    `
+      [
+        :find (pull ?block [*])
+        :where
+        [?block :block/name ?pagename]
+        [(clojure.string/includes? ?pagename "${payload}")]
+      ]
+    `,
+  ]);
+  const blocks = await logseqRequest("logseq.DB.datascriptQuery", [
+    `
+      [
+        :find (pull ?block [*])
+        :where
+        [?block :block/content ?blockcontent]
+        [?block :block/page ?page]
+        [?page :block/name ?pagename]
+        [(clojure.string/includes? ?blockcontent "${payload}")]
+      ]
+    `,
+  ]);
+
+  const pageList = (pages || []).map((i) => ({
+    type: 'page',
+    title: i?.[0]?.name,
+    description: (i?.[0]?.properties?.tags || []).map((i) => `#️⃣${i} `),
+    icon: "page.png",
+    uuid: i?.[0]?.uuid, // 暂时没用，以后万一有用呢？
+  }));
+
+  const blockList = await Promise.all(
+    (blocks || []).map(async (i) => {
+      const page = await logseqRequest("logseq.Editor.getPage", [
+        i?.[0]?.page?.id,
+      ]);
+
+      return {
+        type: 'block',
+        title: page?.name,
+        description: i?.[0]?.content,
+        icon: "block.png",
+        uuid: i?.[0]?.uuid
+      };
+    })
+  ).catch((error) => {
+    utools.showNotification(`${i?.[0]?.content} -> ${JSON.stringify(error)}`);
+  });
+
+  return {
+    pageList,
+    blockList,
+  };
+};
+
+let configItem = "";
 
 window.exports = {
   save_to_logseq: {
@@ -105,14 +162,15 @@ window.exports = {
       },
     },
   },
-  config: {
+  configs: {
     mode: "list",
     args: {
       enter: (action, callbackSetList) => {
         callbackSetList([
           {
             title: "Logseq Server Host",
-            description: utools.dbStorage.getItem("host") || "默认值：127.0.0.1",
+            description:
+              utools.dbStorage.getItem("host") || "默认值：127.0.0.1",
             type: "host",
             icon: "",
           },
@@ -131,16 +189,17 @@ window.exports = {
         ]);
       },
       search: (action, searchWord) => {
-        searchText = searchWord
+        configItem = searchWord;
       },
       select: (action, itemData, callbackSetList) => {
-        utools.dbStorage.setItem(itemData.type, searchText);
-        utools.showNotification(`${itemData.title} 设置成功: ${searchText}`)
+        utools.dbStorage.setItem(itemData.type, configItem);
+        utools.showNotification(`${itemData.title} 设置成功: ${configItem}`);
 
         callbackSetList([
           {
             title: "Logseq Server Host",
-            description: utools.dbStorage.getItem("host") || "默认值：127.0.0.1",
+            description:
+              utools.dbStorage.getItem("host") || "默认值：127.0.0.1",
             type: "host",
             icon: "",
           },
@@ -159,7 +218,32 @@ window.exports = {
         ]);
         // utools.outPlugin();
       },
-      placeholder: "请输入值然后选择对应设置项",
-    }
-  }, 
+      placeholder: "请输入值然后选择对应设置项即可设置",
+    },
+  },
+  search: {
+    mode: "list",
+    args: {
+      enter: async (action, callbackSetList) => {
+        callbackSetList([{ title: "加载中..." }]);
+        const { pageList, blockList } = await searchPageAndBlock(action.payload)
+        callbackSetList([...pageList, ...blockList]);
+      },
+      search: debounce(async (action, searchWord, callbackSetList) => {
+        callbackSetList([{ title: "加载中..." }]);
+        const { pageList, blockList } = await searchPageAndBlock(searchWord);
+        callbackSetList([...pageList, ...blockList]);
+      }),
+      select: async (action, itemData) => {
+        await utools.shellOpenExternal(`logseq://graph/test?page=${encodeURIComponent(itemData.title)}`)
+        if(itemData.type === 'block') {
+          setTimeout(() => {
+            // TODO: 滚动到对应 block 功能不生效
+            logseqRequest('logseq.Editor.scrollToBlockInPage', [itemData.title, itemData.uuid])
+          }, 500);
+        }
+      },
+      placeholder: "请输入搜索Logseq页面和块，选择可直接打开",
+    },
+  },
 };

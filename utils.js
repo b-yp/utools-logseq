@@ -163,10 +163,19 @@ function getFileTypeAndFormat(fileName) {
   return { type: "unknown", format: extension, name };
 }
 
+const debounce = (func, wait = 300) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
 module.exports = {
   request,
   logseqRequest,
   formatDate,
   dataUrlToBuffer,
   getFileTypeAndFormat,
+  debounce
 };

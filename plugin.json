@@ -8,28 +8,39 @@
   "features": [
     {
       "code": "save_to_logseq",
-      "explain": "保存至 Logseq",
+      "explain": "保存至Logseq",
       "cmds": [
         "save to logseq",
         {
           "type": "over",
-          "label": "保存至 Logseq"
+          "label": "保存至Logseq"
         },
         {
           "type": "img",
-          "label": "保存至 Logseq"
+          "label": "保存至Logseq"
         },
         {
           "type": "files",
-          "label": "保存至 Logseq",
+          "label": "保存至Logseq",
           "fileRype": "file"
         }
       ]
     },
     {
-      "code": "config",
+      "code": "configs",
       "explain": "设置",
-      "cmds": ["Config"]
+      "cmds": ["Configs"]
+    },
+    {
+      "code": "search",
+      "explain": "搜索",
+      "cmds": [
+        "search",
+        {
+          "type": "over",
+          "label": "搜索"
+        }
+      ]
     }
   ]
 }
