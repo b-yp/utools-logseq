@@ -38,8 +38,6 @@ const request = async (url, options = {}) => {
     utools.showNotification(`❌ 出错：${JSON.stringify(error)}`);
   });
 
-  if (!response) return;
-
   // 检查响应状态码
   if (!response.ok) {
     utools.showNotification(`❌ 出错：HTTP error! status: ${response.status}`);
@@ -179,5 +177,5 @@ module.exports = {
   formatDate,
   dataUrlToBuffer,
   getFileTypeAndFormat,
-  debounce,
+  debounce
 };

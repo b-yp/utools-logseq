@@ -41,11 +41,6 @@
           "label": "搜索"
         }
       ]
-    },
-    {
-      "code": "graph",
-      "explain": "切换库",
-      "cmds": ["graph"]
     }
   ]
 }

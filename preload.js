@@ -39,7 +39,7 @@ const searchPageAndBlock = async (payload) => {
   ]);
 
   const pageList = (pages || []).map((i) => ({
-    type: "page",
+    type: 'page',
     title: i?.[0]?.name,
     description: (i?.[0]?.properties?.tags || []).map((i) => `#️⃣${i} `),
     icon: "page.png",
@@ -53,11 +53,11 @@ const searchPageAndBlock = async (payload) => {
       ]);
 
       return {
-        type: "block",
+        type: 'block',
         title: page?.name,
         description: i?.[0]?.content,
         icon: "block.png",
-        uuid: i?.[0]?.uuid,
+        uuid: i?.[0]?.uuid
       };
     })
   ).catch((error) => {
@@ -226,9 +226,7 @@ window.exports = {
     args: {
       enter: async (action, callbackSetList) => {
         callbackSetList([{ title: "加载中..." }]);
-        const { pageList, blockList } = await searchPageAndBlock(
-          action.payload
-        );
+        const { pageList, blockList } = await searchPageAndBlock(action.payload)
         callbackSetList([...pageList, ...blockList]);
       },
       search: debounce(async (action, searchWord, callbackSetList) => {
@@ -237,65 +235,15 @@ window.exports = {
         callbackSetList([...pageList, ...blockList]);
       }),
       select: async (action, itemData) => {
-        await utools.shellOpenExternal(
-          `logseq://graph/test?page=${encodeURIComponent(itemData.title)}`
-        );
-        if (itemData.type === "block") {
+        await utools.shellOpenExternal(`logseq://graph/test?page=${encodeURIComponent(itemData.title)}`)
+        if(itemData.type === 'block') {
           setTimeout(() => {
             // TODO: 滚动到对应 block 功能不生效
-            logseqRequest("logseq.Editor.scrollToBlockInPage", [
-              itemData.title,
-              itemData.uuid,
-            ]);
+            logseqRequest('logseq.Editor.scrollToBlockInPage', [itemData.title, itemData.uuid])
           }, 500);
         }
       },
       placeholder: "请输入搜索Logseq页面和块，选择可直接打开",
-    },
-  },
-  graph: {
-    mode: "list",
-    args: {
-      enter: async (action, callbackSetList) => {
-        let repos;
-        const userConfigs = await logseqRequest("logseq.App.getUserConfigs");
-
-        if (userConfigs) {
-          const regex = /logseq[\\/]([^\\/]+)$/;
-          const localRepos = (userConfigs?.me?.repos || []).filter(
-            (i) => !!i.root || !!i.url
-          );
-          const reposName = localRepos
-            .map((i) => i.root?.match(regex) || i.url?.match(regex))
-            .map((i) => i?.[1]);
-          repos = reposName.map((item, index) => ({
-            ...localRepos[index],
-            name: item,
-            logseqUrl: `logseq://graph/${item}`,
-          }));
-          utools.dbStorage.setItem("repos", repos);
-        } else if (utools.dbStorage.getItem("repos")) {
-          repos = utools.dbStorage.getItem("repos");
-        } else {
-          repos = [
-            {
-              name: "未获取到 Logseq 库信息，请打开 Logseq 并启动 HTTP Server",
-            },
-          ];
-        }
-
-        callbackSetList(
-          repos.map((i) => ({
-            title: i.name,
-            description: i.root || i.url,
-            url: i.logseqUrl,
-            icon: "folder.png",
-          }))
-        );
-      },
-      select: (action, itemData) => {
-        utools.shellOpenExternal(itemData.url);
-      },
     },
   },
 };
