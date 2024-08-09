@@ -8,15 +8,27 @@ const {
 } = require("./utils");
 
 const appendBlockInPage = async (args) => {
-  await logseqRequest("logseq.Editor.appendBlockInPage", args);
-  await logseqRequest("logseq.Editor.exitEditingMode"); // TODO 为什么这个方法没有生效
+  await logseqRequest(
+    {
+      logseqApi: "logseq.Editor.appendBlockInPage",
+    },
+    args
+  );
+  await logseqRequest({
+    logseqApi: "logseq.Editor.exitEditingMode",
+  }); // TODO 为什么这个方法没有生效
   utools.showNotification(`✅ 保存成功：${JSON.stringify(args)}`);
   utools.outPlugin();
 };
 
-const searchPageAndBlock = async (payload) => {
-  const pages = await logseqRequest("logseq.DB.datascriptQuery", [
-    `
+const searchPageAndBlock = async (payload, signal) => {
+  const pages = await logseqRequest(
+    {
+      logseqApi: "logseq.DB.datascriptQuery",
+      signal,
+    },
+    [
+      `
       [
         :find (pull ?block [*])
         :where
@@ -24,11 +36,17 @@ const searchPageAndBlock = async (payload) => {
         [(clojure.string/includes? ?pagename "${payload}")]
       ]
     `,
-  ]);
-  const blocks = await logseqRequest("logseq.DB.datascriptQuery", [
-    `
+    ]
+  );
+  const blocks = await logseqRequest(
+    {
+      logseqApi: "logseq.DB.datascriptQuery",
+      signal,
+    },
+    [
+      `
       [
-        :find (pull ?block [*])
+        :find (pull ?block [* {:block/page [:block/name]}])
         :where
         [?block :block/content ?blockcontent]
         [?block :block/page ?page]
@@ -36,33 +54,24 @@ const searchPageAndBlock = async (payload) => {
         [(clojure.string/includes? ?blockcontent "${payload}")]
       ]
     `,
-  ]);
+    ]
+  );
 
   const pageList = (pages || []).map((i) => ({
-    type: 'page',
+    type: "page",
     title: i?.[0]?.name,
-    description: (i?.[0]?.properties?.tags || []).map((i) => `#️⃣${i} `),
+    description: (i?.[0]?.properties?.tags || []).map((i) => ` #${i} `),
     icon: "page.png",
     uuid: i?.[0]?.uuid, // 暂时没用，以后万一有用呢？
   }));
 
-  const blockList = await Promise.all(
-    (blocks || []).map(async (i) => {
-      const page = await logseqRequest("logseq.Editor.getPage", [
-        i?.[0]?.page?.id,
-      ]);
-
-      return {
-        type: 'block',
-        title: page?.name,
-        description: i?.[0]?.content,
-        icon: "block.png",
-        uuid: i?.[0]?.uuid
-      };
-    })
-  ).catch((error) => {
-    utools.showNotification(`${i?.[0]?.content} -> ${JSON.stringify(error)}`);
-  });
+  const blockList = (blocks || []).map((i) => ({
+    type: "block",
+    title: i?.[0]?.page?.name || "❌ 未知页面",
+    description: i?.[0]?.content,
+    icon: "block.png",
+    uuid: i?.[0]?.uuid,
+  }));
 
   return {
     pageList,
@@ -71,6 +80,7 @@ const searchPageAndBlock = async (payload) => {
 };
 
 let configItem = "";
+const controller = new AbortController();
 
 window.exports = {
   save_to_logseq: {
@@ -81,13 +91,13 @@ window.exports = {
         window.utools.hideMainWindow();
 
         try {
-          const { path: currentGraphPath } = await logseqRequest(
-            "logseq.App.getCurrentGraph"
-          );
+          const { path: currentGraphPath } = await logseqRequest({
+            logseqApi: "logseq.App.getCurrentGraph",
+          });
 
-          const { preferredDateFormat } = await logseqRequest(
-            "logseq.App.getUserConfigs"
-          );
+          const { preferredDateFormat } = await logseqRequest({
+            logseqApi: "logseq.App.getUserConfigs",
+          });
 
           const nowJournal = formatDate(new Date(), preferredDateFormat);
 
@@ -226,21 +236,45 @@ window.exports = {
     args: {
       enter: async (action, callbackSetList) => {
         callbackSetList([{ title: "加载中..." }]);
-        const { pageList, blockList } = await searchPageAndBlock(action.payload)
+        const { pageList, blockList } = await searchPageAndBlock(
+          action.payload
+        );
         callbackSetList([...pageList, ...blockList]);
       },
       search: debounce(async (action, searchWord, callbackSetList) => {
         callbackSetList([{ title: "加载中..." }]);
-        const { pageList, blockList } = await searchPageAndBlock(searchWord);
+        // controller.abort();
+        const { pageList, blockList } = await searchPageAndBlock(
+          searchWord,
+          controller.signal
+        );
         callbackSetList([...pageList, ...blockList]);
       }),
       select: async (action, itemData) => {
-        await utools.shellOpenExternal(`logseq://graph/test?page=${encodeURIComponent(itemData.title)}`)
-        if(itemData.type === 'block') {
-          setTimeout(() => {
-            // TODO: 滚动到对应 block 功能不生效
-            logseqRequest('logseq.Editor.scrollToBlockInPage', [itemData.title, itemData.uuid])
-          }, 500);
+        const currentGraph = await logseqRequest({
+          logseqApi: "logseq.App.getCurrentGraph",
+        });
+
+        const graphName = currentGraph?.name;
+        if (!graphName) return;
+
+        if (itemData.type == "page") {
+          return (
+            itemData.title &&
+            utools.shellOpenExternal(
+              `logseq://graph/${graphName}?page=${encodeURIComponent(
+                itemData.title
+              )}`
+            )
+          );
+        }
+        if (itemData.type === "block") {
+          return (
+            itemData.uuid &&
+            utools.shellOpenExternal(
+              `logseq://graph/${graphName}?block-id=${itemData.uuid}`
+            )
+          );
         }
       },
       placeholder: "请输入搜索Logseq页面和块，选择可直接打开",

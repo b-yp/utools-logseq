@@ -30,38 +30,52 @@ const request = async (url, options = {}) => {
   }
 
   // 发送请求
-  const response = await fetch(url, {
-    method,
-    headers,
-    body,
-  }).catch((error) => {
-    utools.showNotification(`❌ 出错：${JSON.stringify(error)}`);
-  });
+  try {
+    const response = await fetch(url, {
+      method,
+      headers,
+      body,
+    }).catch((error) => {
+      utools.showNotification(`❌ 出错：${JSON.stringify(error)}`);
+    });
 
-  // 检查响应状态码
-  if (!response.ok) {
-    utools.showNotification(`❌ 出错：HTTP error! status: ${response.status}`);
-    throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response) return;
+
+    // 检查响应状态码
+    if (!response.ok) {
+      utools.showNotification(
+        `❌ 出错：HTTP error! status: ${response.status}`
+      );
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // 解析响应为 JSON
+    return response.json();
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      console.log("Aborted");
+    } else {
+      throw error;
+    }
   }
-
-  // 解析响应为 JSON
-  return response.json();
 };
 
 /**
  *
- * @param {*} method
+ * @param {*} param0
  * @param {*} args
+ * @returns
  */
-const logseqRequest = (method, args) => {
+const logseqRequest = ({ logseqApi, signal }, args) => {
   return request(api, {
+    signal,
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: {
-      method,
+      method: logseqApi,
       args,
     },
   });
@@ -177,5 +191,5 @@ module.exports = {
   formatDate,
   dataUrlToBuffer,
   getFileTypeAndFormat,
-  debounce
+  debounce,
 };
